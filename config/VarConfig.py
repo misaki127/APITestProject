@@ -4,7 +4,8 @@ import time
 parentDirPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 全局变量
-cookie = ''           #存放cookie
+cookie = ''   #存放cookie
+tokenSheet = ''  #存放获取token的表名
 dataIntoExcel = []   #存放测试结果报告数据
 
 # 测试数据文件中，测试用例表中部分列对应的数字序号

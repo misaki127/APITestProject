@@ -6,10 +6,11 @@ from util.Log import *
 from response import getResponse,jsonGetInfo,splitCode,updateVaribleForDict,updateVaribleForStr,sqlGetVarible,getImportInfo,jsonGetFirstInfo,createReportSheet
 from VarConfig import *
 
-def getToken(globalVariable):
+def getToken(globalVariable,getTokenSheetName):
     try:
-        global cookie
-        caseStepObj = excelObj.getSheetByName(tokenSheetName)
+        global cookie,tokenSheet
+        tokenSheet = getTokenSheetName
+        caseStepObj = excelObj.getSheetByName(getTokenSheetName)
         stepNums = excelObj.getRowsNumber(caseStepObj)
         # 执行用例前，先获取一次excel表内的全局变量
 
@@ -97,7 +98,7 @@ def getGlobalVariable():
 
 def CJMAPI():
     try:
-        global cookie,dataIntoExcel
+        global cookie,dataIntoExcel,tokenSheet
         #根据Excel文件中的sheet名获取sheet对象
         caseSheet=excelObj.getSheetByName('测试用例')
 
@@ -106,7 +107,8 @@ def CJMAPI():
         startTimeNum = time.time()
         #获取测试用例sheet中是否执行该列对象
         isExecuteColumn=excelObj.getColumn(caseSheet,testCase_isExecute)
-
+        #获取测试用例全部的sheet名
+        sheetNames = excelObj.getSheetNames()
 
         #记录执行成功的测试用例个数
         successfulCase=0
@@ -122,7 +124,7 @@ def CJMAPI():
         # 执行用例前，先获取一次excel表内的全局变量
         globalVariable = getGlobalVariable()
         logging.info('全局变量为：' + str(globalVariable))
-        getToken(globalVariable)
+        #getToken(globalVariable)
 
         row = 3
         for idx,i in enumerate(isExecuteColumn[1:]):
@@ -226,15 +228,20 @@ def CJMAPI():
 
                                 headers = stepRow[testHeaders-1].value
                                 isToken = stepRow[testIsToken-1].value
-
-
-                                if isToken != None and isToken != '':
-                                    if isToken.strip().lower() == 'yes':
-                                        if headers == None or headers == '':
-                                            headers = {'Cookie':cookie}
-                                        else:
-                                            headers = eval(headers)
-                                            headers['Cookie'] = cookie
+                                if isToken in sheetNames:
+                                #huoqu token
+                                    if cookie != None and cookie != '':
+                                        if tokenSheet == isToken:
+                                            break
+                                        elif tokenSheet != isToken:
+                                            getToken(globalVariable,isToken)
+                                            if headers == None or headers == '':
+                                                headers = {'Cookie':cookie}
+                                            else:
+                                                headers = eval(headers)
+                                                headers['Cookie'] = cookie
+                                    else:
+                                        getToken(globalVariable,isToken)
 
                                 #headers = {'Content-Type':'application/octet-stream','Connection':'keep-alive'}
                                 variable = stepRow[testVariable-1].value  #需要传递的参数
@@ -276,7 +283,7 @@ def CJMAPI():
                                         resultJson = False
                                         logging.info('请求错误！' + str(e))
                                 if resultJson['state'] == 401:
-                                    getToken()
+                                    getToken(globalVariable,isToken)
                                     getTokenCount +=1
                                     tokenCheck = 0
                                     result = False

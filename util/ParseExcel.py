@@ -24,6 +24,11 @@ class ParseExcel(object):
         self.excelFile=excelPathAndName
         return self.workbook
 
+    def getSheetNames(self):
+        try:
+            return self.workbook.sheetnames
+        except Exception as e:
+            raise e
 
     #根据sheet名获取该sheet对象
     def getSheetByName(self,sheetName):
