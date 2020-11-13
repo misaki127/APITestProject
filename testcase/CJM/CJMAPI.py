@@ -182,10 +182,17 @@ def CJMAPI():
 
 
                                 testCaseNamep = stepRow[testCaseName-1].value
-                                url = stepRow[testUrl-1].value
-                                #检查url是否使用全局变量
+                                # url = stepRow[testUrl-1].value
+                                # #检查url是否使用全局变量
+                                # if globalVariableSep in url and globalVariable != {}:
+                                #     url = updateVaribleForStr(data=url, dict=globalVariable, separtor=globalVariableSep)
+                                url = stepRow[testUrl - 1].value
+                                # 检查url是否使用全局变量
                                 if globalVariableSep in url and globalVariable != {}:
                                     url = updateVaribleForStr(data=url, dict=globalVariable, separtor=globalVariableSep)
+                                    # 检查是否有变量，有则替换
+                                if packVaribleSep in url and variableDict != {}:
+                                    url = updateVaribleForStr(data=url, dict=variableDict, separtor=packVaribleSep)
                                 method = stepRow[testMethod-1].value
                                 sql = stepRow[testSql - 1].value
                                 sqlVarible = stepRow[testSqlVarible - 1].value
