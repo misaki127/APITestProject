@@ -3,7 +3,7 @@
 from WriteTestResult import writeResult
 from testScripts.Excel_Obj import *
 from util.Log import *
-from response import getResponse,jsonGetInfo,splitCode,updateVaribleForDict,updateVaribleForStr,sqlGetVarible,getImportInfo,jsonGetFirstInfo,createReportSheet
+from response import getResponse,jsonGetInfo,splitCode,updateVaribleForDict,updateVaribleForStr,sqlGetVarible,getImportInfo,jsonGetFirstInfo,createReportSheet,jsonSearch
 from VarConfig import *
 
 def getToken(globalVariable,getTokenSheetName):
@@ -232,19 +232,30 @@ def CJMAPI():
                                 #huoqu token
                                     if cookie != None and cookie != '':
                                         if tokenSheet == isToken:
-                                            break
+                                            pass
                                         elif tokenSheet != isToken:
                                             getToken(globalVariable,isToken)
-                                            if headers == None or headers == '':
-                                                headers = {'Cookie':cookie}
-                                            else:
-                                                headers = eval(headers)
-                                                headers['Cookie'] = cookie
                                     else:
                                         getToken(globalVariable,isToken)
+                                if headers == None or headers == '':
+                                    headers = {'Cookie': cookie}
+                                else:
+                                    headers = eval(headers)
+                                    headers['Cookie'] = cookie
 
                                 #headers = {'Content-Type':'application/octet-stream','Connection':'keep-alive'}
                                 variable = stepRow[testVariable-1].value  #需要传递的参数
+                                # 检查  查找变量   是否有变量信息，有的话则去变量字典查找，未找到则不改变，默认为非变量信息
+                                if variable != None and variable != '':
+                                    # 检查入参是否有引用变量，有就替换
+                                    if packVaribleSep in data and variableDict != {}:
+                                        variable = updateVaribleForDict(data=variable, dict=variableDict,
+                                                                    separtor=packVaribleSep)
+                                    # 检查入参是否有引用全局变量，有就替换
+                                    if globalVariableSep in variable and globalVariable != {}:
+                                        variable = updateVaribleForDict(data=variable, dict=globalVariable,
+                                                                    separtor=globalVariableSep)
+
                                 variableName = stepRow[testVariableName-1].value #需要传递的参数的命名
 
                                 if endData == None:
@@ -301,13 +312,15 @@ def CJMAPI():
                                         pass
                                     else:
                                         #onlyFirstVariable 检测
-                                        if stepSheetName in list(onlyFirstVariable.keys()):  #检测表名
+                                        if stepSheetName in list(onlyFirstVariable.keys()):  #检测表名 是否为取第一个值
 
                                             if index in onlyFirstVariable[stepSheetName]:
                                                 variableDict_ext = jsonGetFirstInfo(resultJson,variable,variableName)
                                             else:
                                                 variableDict_ext = jsonGetInfo(resultJson, variable, variableName)
-                                        else:
+                                        elif ":" in variable:       #检测是否需要使用搜索功能
+                                            variableDict_ext = jsonSearch(resultJson,variable,variableName)
+                                        else:          #普通模式
                                             variableDict_ext = jsonGetInfo(resultJson, variable,variableName)
                                     if variableDict_ext != None:
                                         variableDict.update(variableDict_ext)

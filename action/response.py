@@ -26,12 +26,15 @@ def getResponse(url,method, **kwargs):
     hooks = kwargs.get('hooks')#信号事件处理  传递一个 {hook_name: callback_function} 字典给 hooks 请求参数若执行你的回调函数期间发生错误，系统会给出一个警告。若回调函数返回一个值，默认以该值替换传进来的数据。若函数未返回任何东西， 也没有什么其他的影响
 
     try:
+        if verify == None or verify == "":
+            verify = False
+
         r = requests.request(method=method,url=url,params=params,data=data,json=json,headers=headers,cookies=cookies
                                      ,files=files,auth=auth,timeout=timeout,allow_redirects=allow_redirects,proxies=proxies
                                      ,verify=verify,stream=stream,cert=cert,hooks=hooks)
         return r
     except Exception as e:
-        print("请求错误: %s" % e)
+
         logging.info("请求错误: %s" % e)
 
 
@@ -119,7 +122,7 @@ def splitCode(dataType,data):         #请求方式以逗号分隔，请求参�
         methodList = re.split(dataTypeSep,dataType)
         dataList = re.split(dataSep,data)
         if len(methodList) != len(dataList):
-            print('请求方式与请求参数不匹配，请核对后重试！')
+
             logging.info('请求方式与请求参数不匹配，请核对后重试')
             result = None
         elif len(methodList) == 1 and methodList[0] == '':
@@ -130,7 +133,7 @@ def splitCode(dataType,data):         #请求方式以逗号分隔，请求参�
                 result +=methodList[a] + '=' + dataList[a] +','
         return result
     except Exception as e:
-        print(str(e))
+
         logging.info('拼接代码：splitCode:' + str(e))
 
 
@@ -142,7 +145,7 @@ def updateVaribleForDict(data,dict,separtor):      #从参数里确定变量位�
             #data = data.replace(separtor + i + separtor, str(dict[i]))
         return data
     except Exception as e:
-        print(str(e))
+
         logging.info('查找变量名填入变量值:' + str(e))
 
 
@@ -154,7 +157,7 @@ def updateVaribleForStr(data,dict,separtor):      #从参数里确定变量位�
             data = data.replace(separtor + i + separtor, str(dict[i]))
         return data
     except Exception as e:
-        print(str(e))
+
         logging.info('查找变量名填入变量值:' + str(e))
 
 
@@ -166,7 +169,7 @@ def sqlGetVarible(sql, varible):  #查询sql获取结果，并将结果与变量
         for i in sqlList:
             mysql.sql = i
             logging.info('sql is {0}'.format(i))
-            print(i)
+
             r = mysql.select_sql()
             for a in r:
                 for b in a:
@@ -175,7 +178,7 @@ def sqlGetVarible(sql, varible):  #查询sql获取结果，并将结果与变量
                     else:
                         p.append(a[b])
             logging.info('sql results is {0}'.format(str(p)))
-            print(str(p))
+
         mysql.end_con()
         varibleList = re.split(varibleSep,varible)
         varibleDict = {}
@@ -184,7 +187,7 @@ def sqlGetVarible(sql, varible):  #查询sql获取结果，并将结果与变量
                 varibleDict[varibleList[l]] = p[l]
 
         else:
-            print('SQL返回的数据与设置的变量名数量不对应，请检查是否输入正确！')
+            # print('SQL返回的数据与设置的变量名数量不对应，请检查是否输入正确！')
             logging.info('SQL返回的数据与设置的变量名数量不对应，请检查是否输入正确！')
             varibleDict = None
         return varibleDict
@@ -253,5 +256,92 @@ def createReportSheet(filePath,data):
     except Exception as e:
         logging.info(str(e))
 
+findData = ""
 
+def jsonSearch(jsonData,findData,dataName):
+    try:
+        findDataList = re.split(varibleSep, findData)  # 查找值列表
+        dataNameList = re.split(varibleSep, dataName)  # 命名值列表
+        searchList= []
+        for i in findDataList:
+            if ":" in i:
+                searchList = searchList + re.split(":",i)
+                findDataList.remove(i)
+        endDict = {}
+        if isinstance(jsonData,dict):
+            jsonList = jsonData['results']['list']
+            for data in jsonList:
+                for index in range(len(searchList)):
+                    keyList = list(data.keys())
+                    if index not in keyList:
+                        break
+                    else:
+                        endDict = data
+                        break
+                if endDict != {}:
+                    break
+            resultDict = jsonGetFirstInfo(endDict,findDataList,dataNameList)
+            return resultDict
+        else:
+            raise SyntaxError
 
+    except Exception as e:
+        logging.info(e)
+
+#搜索功能  查找字段里，输入key:value,key1,key2 则可以自动寻找key:value对应的数据，然后从数据里查找需要的变量，需要返回的数据为{“results":{"list":{[]}}}格式，可输入多个字段搜索
+def jsonSearch(jsonData, findData, dataName):
+    try:
+        findDataList = re.split(',', findData)  # 查找值列表
+        dataNameList = re.split(',', dataName)  # 命名值列表
+        searchList = []
+        remList = []
+        for i in findDataList:
+            if ":" in i:
+                searchList = searchList + re.split(":", i)
+                remList.append(i)
+        findDataList = [x for x in findDataList if x not in remList]
+        endDict = {}
+        if isinstance(jsonData, dict):
+            jsonList = jsonData['results']['list']
+            for data in jsonList:
+                for index in range(0,len(searchList),2):
+                    keyList = list(data.keys())
+                    if searchList[index] not in keyList:
+                        endDict = {}
+                        break
+                    if str(data[searchList[index]]) != str(searchList[index+1]):
+                        endDict = {}
+                        break
+                    else:
+                        endDict = data
+
+                if endDict != {}:
+                    break
+            if isinstance(endDict, str):
+                pass
+            else:
+                endDict = str(endDict)
+            dataList = re.split('[^\w_-]', endDict)
+            dataList = list(filter(None, dataList))  # 拆解json成列表
+            resultList = []
+            for a in findDataList:
+                for b in dataList:
+                    if a == b:
+                        resultList.append(dataList[dataList.index(b) + 1])
+                        break
+
+            resultDict = {}
+            if len(dataNameList) == len(resultList):
+
+                for f in range(len(dataNameList)):
+                    resultDict[dataNameList[f]] = resultList[f]
+                return resultDict
+            else:
+                logging.info('获取参数失败！请检查数据是否合法!')
+                raise ValueError
+
+        else:
+            raise SyntaxError
+
+    except Exception as e:
+        logging.ingo("搜索功能失败："+e)
