@@ -47,6 +47,9 @@ def jsonGetInfo(data,findData,dataName):  #在返回的json数据里查找对应
             pass
         else:
             data=str(data)
+        data = data.strip()
+        findData = findData.strip()
+        dataName = dataName.strip()
         dataList = re.split('[^\w_-]',data)
         dataList = list(filter(None, dataList))
         findDataList = re.split(varibleSep,findData)
@@ -90,6 +93,9 @@ def jsonGetFirstInfo(data,findData,dataName):  #在json数据内查找指定ID�
             pass
         else:
             data=str(data)
+        data = data.strip()
+        findData = findData.strip()
+        dataName = dataName.strip()
         dataList = re.split('[^\w_-]',data)
         dataList = list(filter(None, dataList))  #拆解json成列表
         findDataList = re.split(varibleSep,findData)  #查找值列表
@@ -119,6 +125,8 @@ def splitCode(dataType,data):         #请求方式以逗号分隔，请求参�
     try:
         if data =="" or data ==None or dataType =='' or dataType ==None:
             return None
+        dataType = dataType.strip()
+        data = data.strip()
         methodList = re.split(dataTypeSep,dataType)
         dataList = re.split(dataSep,data)
         if len(methodList) != len(dataList):
@@ -256,43 +264,15 @@ def createReportSheet(filePath,data):
     except Exception as e:
         logging.info(str(e))
 
-findData = ""
 
-def jsonSearch(jsonData,findData,dataName):
-    try:
-        findDataList = re.split(varibleSep, findData)  # 查找值列表
-        dataNameList = re.split(varibleSep, dataName)  # 命名值列表
-        searchList= []
-        for i in findDataList:
-            if ":" in i:
-                searchList = searchList + re.split(":",i)
-                findDataList.remove(i)
-        endDict = {}
-        if isinstance(jsonData,dict):
-            jsonList = jsonData['results']['list']
-            for data in jsonList:
-                for index in range(len(searchList)):
-                    keyList = list(data.keys())
-                    if index not in keyList:
-                        break
-                    else:
-                        endDict = data
-                        break
-                if endDict != {}:
-                    break
-            resultDict = jsonGetFirstInfo(endDict,findDataList,dataNameList)
-            return resultDict
-        else:
-            raise SyntaxError
-
-    except Exception as e:
-        logging.info(e)
 
 #搜索功能  查找字段里，输入key:value,key1,key2 则可以自动寻找key:value对应的数据，然后从数据里查找需要的变量，需要返回的数据为{“results":{"list":{[]}}}格式，可输入多个字段搜索
 def jsonSearch(jsonData, findData, dataName):
     try:
-        findDataList = re.split(',', findData)  # 查找值列表
-        dataNameList = re.split(',', dataName)  # 命名值列表
+        findData = findData.strip()
+        dataName = dataName.strip()
+        findDataList = re.split(varibleSep, findData)  # 查找值列表
+        dataNameList = re.split(varibleSep, dataName)  # 命名值列表
         searchList = []
         remList = []
         for i in findDataList:
@@ -322,7 +302,7 @@ def jsonSearch(jsonData, findData, dataName):
             else:
                 endDict = str(endDict)
             dataList = re.split('[^\w_-]', endDict)
-            dataList = list(filter(None, dataList))  # 拆解json成列表
+            #dataList = list(filter(None, dataList))  # 拆解json成列表
             resultList = []
             for a in findDataList:
                 for b in dataList:
@@ -344,4 +324,19 @@ def jsonSearch(jsonData, findData, dataName):
             raise SyntaxError
 
     except Exception as e:
-        logging.ingo("搜索功能失败："+e)
+        logging.info("搜索功能失败："+e)
+
+
+#输入预期结果时，对结果进行检测
+def passTesting(jsonData,data):
+    try:
+        dataList = re.split(expectResultSep,str(data))
+        for i in dataList:
+            if i in str(jsonData):
+                pass
+            else:
+                return False
+        return True
+    except Exception as e:
+        logging.debug('jsonData:'+str(jsonData) + ',data = ' + str(data))
+        logging.info("通过检测失败！")

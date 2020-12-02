@@ -39,6 +39,7 @@ testApiTime = 14
 testApiResult = 15
 testResponseCode = 16
 testErrorInfo = 17
+testExpectResult = 18  #预期结果
 
 
 
@@ -56,8 +57,8 @@ testErrorInfo = 17
 
 
 # 测试数据文件存放绝对路径
-dataFilePath = parentDirPath + "\\testData\\CJMCASE\\数字乡村接口自动化.xlsx"
-#dataFilePath = parentDirPath + "\\testData\\CJMCASE\\平台中心接口自动化.xlsx"
+#dataFilePath = parentDirPath + "\\testData\\CJMCASE\\数字乡村接口自动化.xlsx"
+dataFilePath = parentDirPath + "\\testData\\CJMCASE\\demo模板.xlsx"
 
 # mysql查询参数
 # 测试环境数据库
@@ -88,4 +89,6 @@ importFilePath = parentDirPath + '\\report\\'
 onlyFirstVariable = {"党组织管理":(3,),"一村一码":(3,),"一户一码":(2,3,5,13,),"租户管理":(2,4,),"景点管理":(3,),"酒店管理":(2,4,),"一户一码码关联":(2,4,),
                      "一户一码活动":(3,4,6,),"阳光村务":(3,8,10,16,22,28,35,42,49,55,57,64,71,74,76,80,),"数字党建":(2,4,10,17,23,28,32,34,38,41,44,46,),"村民积分":(2,7,),
                      "信息发布":(3,5,9,11,15,17,21,23,27,29,),"数字乡村H5":(2,6,8,28,32,),'数字乡村':(3,8,11,)}  #{表名：(行号,)}
+
+expectResultSep = '&&'  #多个预期结果分隔符
 

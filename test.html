@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="wanghan.js">
+        function test() {
+            document.getElementById("wang").innerText = "wanghan";
+        }
+        function test1() {
+            window.alert("hello!")
+        }
+        function test2() {
+            document.write("hello word!!!")
+        }
+        function test3() {
+            console.log("哈哈哈哈！")
+        }
+    </script>
+</head>
+<body>
+<p id = "wang">哈哈哈哈哈哈哈</p>
+<p id="test" onmouseover="pOver()" onmouseout="pOut()" onkeydown="test()">Hello world!</p>
+<button type="button" onclick="test()">click</button>
+<button type="button" onclick="test1()">click</button>
+<button type="button" onclick="test2()">click</button>
+<button type="button" onclick="test3()">click</button>
+</body>
+</html>

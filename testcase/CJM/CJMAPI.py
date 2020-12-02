@@ -3,7 +3,7 @@
 from WriteTestResult import writeResult
 from testScripts.Excel_Obj import *
 from util.Log import *
-from response import getResponse,jsonGetInfo,splitCode,updateVaribleForDict,updateVaribleForStr,sqlGetVarible,getImportInfo,jsonGetFirstInfo,createReportSheet,jsonSearch
+from response import getResponse,jsonGetInfo,splitCode,updateVaribleForDict,updateVaribleForStr,sqlGetVarible,getImportInfo,jsonGetFirstInfo,createReportSheet,jsonSearch,passTesting
 from VarConfig import *
 
 def getToken(globalVariable,getTokenSheetName):
@@ -16,14 +16,15 @@ def getToken(globalVariable,getTokenSheetName):
 
         success = 0
         dataName = 'token'
+        logging.info("进入获取token程序")
         logging.info("\033[1;32;m测试用例共%s步\033[0m" % stepNums)
         for index in range(2, stepNums + 1):
                 #获取步骤sheet中第index行对象
             stepRow = excelObj.getRow(caseStepObj, index)
-            url = stepRow[testUrl - 1].value
+            url = stepRow[testUrl - 1].value.strip()
             if globalVariableSep in url and globalVariable != {}:
                 url = updateVaribleForStr(data=url, dict=globalVariable, separtor=globalVariableSep)
-            method = stepRow[testMethod - 1].value
+            method = stepRow[testMethod - 1].value.strip()
             dataType = stepRow[testDataType - 1].value
             data = stepRow[testData - 1].value
             # 检查  入参   是否有变量信息，有的话则去变量字典查找，未找到则不改变，默认为非变量信息
@@ -35,6 +36,8 @@ def getToken(globalVariable,getTokenSheetName):
 
 
             if headers == None or headers == '':
+                headers = {}
+            elif headers.strip() =='':
                 headers = {}
             elif isinstance(headers,str):
                 headers = eval(headers)
@@ -129,7 +132,7 @@ def CJMAPI():
         row = 3
         for idx,i in enumerate(isExecuteColumn[1:]):
 
-            caseName=excelObj.getCellOfValue(caseSheet,rowNo=idx+2,colsNo=testCase_testCaseName)
+            caseName=excelObj.getCellOfValue(caseSheet,rowNo=idx+2,colsNo=testCase_testCaseName).strip()
 
 
             row +=1
@@ -143,11 +146,11 @@ def CJMAPI():
                 requiredCase+=1
 
                 #获取测试用例表中，第idx+1行中用测试执行时所使用的框架类型
-                userFrameWorkName=excelObj.getCellOfValue(caseSheet,rowNo=idx+2,colsNo=testCase_frameWorkName)
+                userFrameWorkName=excelObj.getCellOfValue(caseSheet,rowNo=idx+2,colsNo=testCase_frameWorkName).strip()
 
 
                 #获取测试用例表中，第idx+1行中执行用例的步骤sheet名
-                stepSheetName=excelObj.getCellOfValue(caseSheet,rowNo=idx+2,colsNo=testCase_testStepSheetName)
+                stepSheetName=excelObj.getCellOfValue(caseSheet,rowNo=idx+2,colsNo=testCase_testStepSheetName).strip()
 
 
                 if userFrameWorkName == '关键字':
@@ -174,76 +177,85 @@ def CJMAPI():
                             errorInfo = ''
                             while tokenCheck == 0:
                                 if getTokenCount >=3: #同一条用例连续获取三次token报错，说明获取的token错误
-                                    logging.info('请求三次token失败，请检查获取token表是否正常！')
+                                    logging.info('请求三次token失败，请检查获取token表是否正常或是否正确填写‘是否需要token’字段！')
                                     raise TimeoutError
 
                                 # 获取步骤sheet中第index行对象
                                 stepRow = excelObj.getRow(caseStepObj, index)
 
 
-                                testCaseNamep = stepRow[testCaseName-1].value
-                                # url = stepRow[testUrl-1].value
-                                # #检查url是否使用全局变量
-                                # if globalVariableSep in url and globalVariable != {}:
-                                #     url = updateVaribleForStr(data=url, dict=globalVariable, separtor=globalVariableSep)
-                                url = stepRow[testUrl - 1].value
+                                testCaseNamep = stepRow[testCaseName-1].value.strip()
+
+
+                                url = stepRow[testUrl - 1].value.strip()
                                 # 检查url是否使用全局变量
-                                if globalVariableSep in url and globalVariable != {}:
-                                    url = updateVaribleForStr(data=url, dict=globalVariable, separtor=globalVariableSep)
-                                    # 检查是否有变量，有则替换
-                                if packVaribleSep in url and variableDict != {}:
-                                    url = updateVaribleForStr(data=url, dict=variableDict, separtor=packVaribleSep)
-                                method = stepRow[testMethod-1].value
+                                try:
+                                    if globalVariableSep in url and globalVariable != {}:
+                                        url = updateVaribleForStr(data=url, dict=globalVariable, separtor=globalVariableSep)
+                                        # 检查是否有变量，有则替换
+                                    if packVaribleSep in url and variableDict != {}:
+                                        url = updateVaribleForStr(data=url, dict=variableDict, separtor=packVaribleSep)
+                                except Exception as e:
+                                    logging.info("URL变量检测失败!"+str(e))
+                                method = stepRow[testMethod-1].value.strip()
                                 sql = stepRow[testSql - 1].value
                                 sqlVarible = stepRow[testSqlVarible - 1].value
-
-
+                                try:
                                 #检查sql是否有入参，有点话则去变量字典查找，并拼接，未找到就不改变
-                                if sql != None and sql != '':
+                                    if sql != None and sql != '':
 
-                                    if packVaribleSep in sql and variableDict !={}:
-                                        #检查是否引用变量，有的话替换值
-                                        sql = updateVaribleForDict(data=sql,dict=variableDict,separtor=packVaribleSep)
-                                    #检查是否有引用全局变量，有的话就替换值
-                                    if globalVariableSep in sql and globalVariable != {}:
-                                        sql = updateVaribleForDict(data=sql, dict=globalVariable,separtor=globalVariableSep)
+                                        if packVaribleSep in sql and variableDict !={}:
+                                            #检查是否引用变量，有的话替换值
+                                            sql = updateVaribleForDict(data=sql,dict=variableDict,separtor=packVaribleSep)
+                                        #检查是否有引用全局变量，有的话就替换值
+                                        if globalVariableSep in sql and globalVariable != {}:
+                                            sql = updateVaribleForDict(data=sql, dict=globalVariable,separtor=globalVariableSep)
 
-                                # 对请求参数和数据类型进行处理，处理单参数和多参数情况
-                                    variableDict_ext = sqlGetVarible(sql, sqlVarible)
+                                    # 对请求参数和数据类型进行处理，处理单参数和多参数情况
+                                        variableDict_ext = sqlGetVarible(sql, sqlVarible)
 
-                                if variableDict_ext:
-                                    if variableDict_ext != None:
-                                        variableDict.update(variableDict_ext)  # 将sql获得 的变量存入变量字典
+                                    if variableDict_ext:
+                                        if variableDict_ext != None:
+                                            variableDict.update(variableDict_ext)  # 将sql获得 的变量存入变量字典
+                                except Exception as e:
+                                    logging.info("SQL变量检测或通过SQL执行结果获取变量失败！"+str(e))
 
                                 dataType = stepRow[testDataType-1].value
+                                expectedResult = stepRow[testExpectResult-1].value
+
 
                                 data = stepRow[testData-1].value
-
+                                try:
                                 #检查  入参   是否有变量信息，有的话则去变量字典查找，未找到则不改变，默认为非变量信息
-                                if data != None and data != '':
-                                    #检查入参是否有引用变量，有就替换
-                                    if packVaribleSep in data and variableDict != {}:
-                                        data = updateVaribleForDict(data=data,dict=variableDict,separtor=packVaribleSep)
-                                    #检查入参是否有引用全局变量，有就替换
-                                    if globalVariableSep in data and globalVariable != {}:
-                                        data = updateVaribleForDict(data=data,dict=globalVariable,separtor=globalVariableSep)
+                                    if data != None and data != '':
+                                        #检查入参是否有引用变量，有就替换
+                                        if packVaribleSep in data and variableDict != {}:
+                                            data = updateVaribleForDict(data=data,dict=variableDict,separtor=packVaribleSep)
+                                        #检查入参是否有引用全局变量，有就替换
+                                        if globalVariableSep in data and globalVariable != {}:
+                                            data = updateVaribleForDict(data=data,dict=globalVariable,separtor=globalVariableSep)
 
-
-                                    endData = splitCode(dataType, data)
-                                else:
-                                    endData = ''
+                                        endData = splitCode(dataType, data)
+                                    else:
+                                        endData = ''
+                                except Exception as e:
+                                    logging.info("入参变量检测失败！"+str(e))
 
                                 headers = stepRow[testHeaders-1].value
+
                                 isToken = stepRow[testIsToken-1].value
-                                if isToken in sheetNames:
-                                #huoqu token
-                                    if cookie != None and cookie != '':
-                                        if tokenSheet == isToken:
-                                            pass
-                                        elif tokenSheet != isToken:
+                                try:
+                                    if isToken in sheetNames:
+                                    #huoqu token
+                                        if cookie != None and cookie != '':
+                                            if tokenSheet == isToken:
+                                                pass
+                                            elif tokenSheet != isToken:
+                                                getToken(globalVariable,isToken)
+                                        else:
                                             getToken(globalVariable,isToken)
-                                    else:
-                                        getToken(globalVariable,isToken)
+                                except Exception as e:
+                                    logging.info("获取Token失败！"+str(e))
                                 if headers == None or headers == '':
                                     headers = {'Cookie': cookie}
                                 else:
@@ -251,11 +263,11 @@ def CJMAPI():
                                     headers['Cookie'] = cookie
 
                                 #headers = {'Content-Type':'application/octet-stream','Connection':'keep-alive'}
-                                variable = stepRow[testVariable-1].value  #需要传递的参数
+                                variable = stepRow[testVariable-1].value #需要传递的参数
                                 # 检查  查找变量   是否有变量信息，有的话则去变量字典查找，未找到则不改变，默认为非变量信息
                                 if variable != None and variable != '':
                                     # 检查入参是否有引用变量，有就替换
-                                    if packVaribleSep in data and variableDict != {}:
+                                    if packVaribleSep in variable and variableDict != {}:
                                         variable = updateVaribleForDict(data=variable, dict=variableDict,
                                                                     separtor=packVaribleSep)
                                     # 检查入参是否有引用全局变量，有就替换
@@ -269,7 +281,7 @@ def CJMAPI():
                                     print('入参错误，请检查重新输入！')
                                     resultJson = False
                                     errorInfo = '入参错误，请检查重新输入！'
-                                    result = False
+
                                 else:
                                     try:
                                         if headers !='' and headers!=None:
@@ -287,20 +299,32 @@ def CJMAPI():
                                             r = eval(requestCode )
 
                                         if r ==None:
+                                            logging.info('请求失败！')
                                             raise ValueError
                                         if '导出' in testCaseNamep:  # 如果测试用例名称里有导出字样，自动将内容存入excel
                                             logging.info('进入导出程序')
                                             filename= getImportInfo(r)
                                             logging.info('导出数据已写入:'+filename)
-                                            resultJson = {'state':200,'msg':'导出成功！'}
+                                            code = r.status_code
+
+
                                         else:
-                                            resultJson = r.json()
+                                            try:
+                                                resultJson = r.json()
+
+                                            except Exception as e:
+                                                resultJson = r.content.decode('utf-8')
+                                            code = jsonGetInfo(resultJson, 'state', 'code')['code']
+
                                         logging.info("Response: " + str(resultJson))
                                     except Exception as e:
-                                        errorInfo = str(e)
+                                        errorInfo = '请求失败！'
                                         resultJson = False
+
                                         logging.info('请求错误！' + str(e))
-                                if resultJson['state'] == 401:
+                                        raise Exception
+#------------------------------------------------
+                                if code == 401 or "您暂未登入" in str(resultJson):
                                     getToken(globalVariable,isToken)
                                     getTokenCount +=1
                                     tokenCheck = 0
@@ -312,7 +336,7 @@ def CJMAPI():
                                 else:
                                     result = True
                                     tokenCheck = 1
-                                    ResponceCode = resultJson['state']
+
                                     if variable =='' or variable == None:
                                         pass
                                     elif variableName == '' or variableName == None:
@@ -331,38 +355,45 @@ def CJMAPI():
                                             variableDict_ext = jsonGetInfo(resultJson, variable,variableName)
                                     if variableDict_ext != None:
                                         variableDict.update(variableDict_ext)
-
+# ---------------------------------------------------------
                         except Exception as e:
                             logging.info('error is '+str(e))
                             result = False
-                            errorInfo = str(e)
+                            if errorInfo == '' or errorInfo == None:
+                                errorInfo = "未知错误："+str(e)
 
                         row += 1
                         dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'B'+str(row)+':E'+str(row), 'value': 'merge_cells'})
 
                         if result:
                             successfulSteps += 1
+                            #检测预期结果
+                            isPass = True
+
+                            if expectedResult != None and expectedResult != '':
+                                isPass = passTesting(resultJson,expectedResult)
                             logging.info('\033[1;32;m步骤%s成功\033[0m' % stepRow[testCaseName - 1].value)
-                            if resultJson['state'] == 200 or resultJson['state']== '200':
-                                writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="pass",ApiResult=str(resultJson),ApiResponceCode=str(ResponceCode),errorInfo=None,errorNumber=testErrorInfo)
+                            if code in [200,'200'] and isPass:
+                                writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="pass",ApiResult=str(resultJson),ApiResponceCode=str(code),errorInfo=None,errorNumber=testErrorInfo)
                                 dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'B' + str(row), 'value': 'pass'})
                                 dataIntoExcel.append({'sheetName':testReportSheetName,'address':'F'+str(row),'value':str(resultJson)})
-                            elif resultJson['state'] == 500 or resultJson['state']== '500':
+                                code200Nums += 1
+                            else:
                                 writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="faild",
-                                            ApiResult=str(resultJson), ApiResponceCode=str(ResponceCode),
+                                            ApiResult=str(resultJson), ApiResponceCode=str(code),
                                             errorInfo=None, errorNumber=testErrorInfo)
                                 dataIntoExcel.append(
                                     {'sheetName': testReportSheetName, 'address': 'B' + str(row), 'value': 'faild'})
                                 dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'F' + str(row),
                                                       'value': str(resultJson)})
-                            if resultJson['state'] == 200:
-                                code200Nums +=1
-                            else:
-                                codeNot200Nums +=1
+                                codeNot200Nums += 1
+                            #
+                            # else:
+                            #     codeNot200Nums +=1
                             logging.info('变量字典为{0}'.format(str(variableDict)))
                         else:
                             logging.info('\033[4;31;m执行步骤%s发生异常\033[0m' % stepRow[testCaseName - 1].value)
-                            writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="faild",errorInfo=errorInfo, errorNumber=testErrorInfo,ApiResult='Error!',ApiResponceCode='Error')
+                            writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="faild",errorInfo=errorInfo, errorNumber=testErrorInfo,ApiResult='Error!',Apis='Error')
                             dataIntoExcel.append({'sheetName': testReportSheetName, 'address':'B' + str(row), 'value': 'faild'})
                             dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'F'+str(row), 'value': str(errorInfo)})
 
@@ -396,7 +427,7 @@ def CJMAPI():
             else:
                 '''
                 清空不需要执行的执行时间和执行结果，
-                异常信息，异常图片单元格
+                异常信息，
                 '''
                 logging.info('\033[0;34;m用例%s设置的为不执行，请检查确认。。\033[0m'%caseName)
 
@@ -407,7 +438,8 @@ def CJMAPI():
 
         dataIntoExcel.append({'sheetName': testReportSheetName, 'address':'D2', 'value': str(endTimeNum-startTimeNum)})
         dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'F2', 'value': '成功:'+str(passNums)+' 失败:'+str(failNums)})
-        #logging.info('dataIntoExcel: ' + str(dataIntoExcel))
+        print(dataIntoExcel)
+
         createReportSheet(filePath=dataFilePath,data=dataIntoExcel)
 
     except Exception as e:
