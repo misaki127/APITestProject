@@ -1,1 +1,0 @@
-{"timestamp":"2020-11-10 16:58:10","path":"/digital-village/hydra-digital-village/api/v1/tenant/down","status":500,"error":"Internal Server Error","message":"finishConnect(..) failed: Connection refused: /192.168.2.215:15010"}

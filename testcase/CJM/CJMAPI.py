@@ -314,7 +314,11 @@ def CJMAPI():
 
                                             except Exception as e:
                                                 resultJson = r.content.decode('utf-8')
-                                            code = jsonGetInfo(resultJson, 'state', 'code')['code']
+                                            code = jsonGetInfo(resultJson, 'state', 'code')
+                                            if 'code' not in code:
+                                                code = r.status_code
+                                            else:
+                                                code = code['code']
 
                                         logging.info("Response: " + str(resultJson))
                                     except Exception as e:
@@ -366,34 +370,55 @@ def CJMAPI():
                         dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'B'+str(row)+':E'+str(row), 'value': 'merge_cells'})
 
                         if result:
+                            logging.info('\033[1;32;m步骤%s成功\033[0m' % stepRow[testCaseName - 1].value)
                             successfulSteps += 1
                             #检测预期结果
                             isPass = True
 
                             if expectedResult != None and expectedResult != '':
+
                                 isPass = passTesting(resultJson,expectedResult)
-                            logging.info('\033[1;32;m步骤%s成功\033[0m' % stepRow[testCaseName - 1].value)
-                            if code in [200,'200'] and isPass:
-                                writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="pass",ApiResult=str(resultJson),ApiResponceCode=str(code),errorInfo=None,errorNumber=testErrorInfo)
-                                dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'B' + str(row), 'value': 'pass'})
-                                dataIntoExcel.append({'sheetName':testReportSheetName,'address':'F'+str(row),'value':str(resultJson)})
-                                code200Nums += 1
+                                if isPass:
+                                    writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="pass",
+                                                    ApiResult=str(resultJson), ApiResponceCode=str(code), errorInfo=None,
+                                                    errorNumber=testErrorInfo)
+                                    dataIntoExcel.append(
+                                            {'sheetName': testReportSheetName, 'address': 'B' + str(row), 'value': 'pass'})
+                                    dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'F' + str(row),
+                                                              'value': str(resultJson)})
+                                    code200Nums += 1
+                                else:
+                                    writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="faild",
+                                                    ApiResult=str(resultJson), ApiResponceCode=str(code),
+                                                    errorInfo=None, errorNumber=testErrorInfo)
+                                    dataIntoExcel.append(
+                                            {'sheetName': testReportSheetName, 'address': 'B' + str(row), 'value': 'faild'})
+                                    dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'F' + str(row),
+                                                              'value': str(resultJson)})
+                                    codeNot200Nums += 1
                             else:
-                                writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="faild",
-                                            ApiResult=str(resultJson), ApiResponceCode=str(code),
-                                            errorInfo=None, errorNumber=testErrorInfo)
-                                dataIntoExcel.append(
-                                    {'sheetName': testReportSheetName, 'address': 'B' + str(row), 'value': 'faild'})
-                                dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'F' + str(row),
-                                                      'value': str(resultJson)})
-                                codeNot200Nums += 1
+
+                                if code in [200,'200'] :
+                                    writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="pass",ApiResult=str(resultJson),ApiResponceCode=str(code),errorInfo=None,errorNumber=testErrorInfo)
+                                    dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'B' + str(row), 'value': 'pass'})
+                                    dataIntoExcel.append({'sheetName':testReportSheetName,'address':'F'+str(row),'value':str(resultJson)})
+                                    code200Nums += 1
+                                else:
+                                    writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="faild",
+                                                ApiResult=str(resultJson), ApiResponceCode=str(code),
+                                                errorInfo=None, errorNumber=testErrorInfo)
+                                    dataIntoExcel.append(
+                                        {'sheetName': testReportSheetName, 'address': 'B' + str(row), 'value': 'faild'})
+                                    dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'F' + str(row),
+                                                          'value': str(resultJson)})
+                                    codeNot200Nums += 1
                             #
                             # else:
                             #     codeNot200Nums +=1
                             logging.info('变量字典为{0}'.format(str(variableDict)))
                         else:
                             logging.info('\033[4;31;m执行步骤%s发生异常\033[0m' % stepRow[testCaseName - 1].value)
-                            writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="faild",errorInfo=errorInfo, errorNumber=testErrorInfo,ApiResult='Error!',Apis='Error')
+                            writeResult(stepSheetName, rowNo=index, colsNo="api-testcase", testResult="faild",errorInfo=errorInfo, errorNumber=testErrorInfo,ApiResult='Error!')
                             dataIntoExcel.append({'sheetName': testReportSheetName, 'address':'B' + str(row), 'value': 'faild'})
                             dataIntoExcel.append({'sheetName': testReportSheetName, 'address': 'F'+str(row), 'value': str(errorInfo)})
 
